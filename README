@@ -1,0 +1,14 @@
+# com.fingerhutpress.clj-perls
+
+Some utilities for built-in functions available in Perl, that I
+have not found elsewhere in Clojure.
+
+## Usage
+
+See documentation for individual functions in the source code.
+
+## License
+
+Copyright (C) 2012 John Andrew Fingerhut (andy_fingerhut@alum.wustl.edu)
+
+Distributed under the Eclipse Public License, the same as Clojure.
