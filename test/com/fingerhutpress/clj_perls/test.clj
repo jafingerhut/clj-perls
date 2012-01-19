@@ -2,6 +2,8 @@
   (:use [com.fingerhutpress.clj-perls])
   (:use [clojure.test]))
 
+(set! *warn-on-reflection* true)
+
 
 ;; TBD: Possible to test die here?  Perhaps via creating temporary
 ;; files containing Clojure source code invoking die, making them

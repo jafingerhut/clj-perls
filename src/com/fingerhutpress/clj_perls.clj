@@ -1,6 +1,8 @@
 (ns com.fingerhutpress.clj-perls
   (:require [clojure.string :as str]))
 
+(set! *warn-on-reflection* true)
+
 
 (defn die
   "Print string msg to *err*, then exit.
@@ -20,7 +22,11 @@
 
 (defn ^String chr
   "Return a string containing only the one specified Unicode code point,
-   although it may contain 1 or 2 UTF-16 code units."
+   although it may contain 1 or 2 UTF-16 code units.
+
+   Warning: Will return an invalid UTF-16 string containing only a
+   leading or trailing surrogate if you give it a codepoint in the
+   surrogate range, 0xD800 through 0xDFFF."
   [codepoint]
   (String. (Character/toChars codepoint)))
 
@@ -29,12 +35,14 @@
   "Return the Unicode code point of the first character in string s.
    If the first character is a UTF-16 surrogate pair, the code point
    returned is that of the pair, not of the leading surrogate.  Return
-   0 if the string is empty.  The behavior is undefined if the string
-   is not valid UTF-16."
-  [s]
-  (if (= s "")   ; special case for Perl compatability
-    0
-    (.codePointAt s 0)))
+   0 if the string is empty.
+
+   The behavior is undefined if the string is not valid UTF-16."
+  [^CharSequence s]
+  (let [s (.toString s)]
+    (if (= s "")   ; special case for Perl compatability
+      0
+      (.codePointAt s 0))))
 
 
 (defmacro while-<>
@@ -137,9 +145,9 @@
    the string s has leading whitespace, in which case the Clojure
    version will return a list where the first string is empty, but the
    Perl version will not.  split-on-space handles this the same as
-   Perl does, even for the leading whitepace case, by first removing
-   any leading whitespace before doing the split.  It also handles the
-   corner case of returning an empty vector if s has length 0."
+   Perl does, by first removing any leading whitespace before doing
+   the split.  It also handles the corner case of returning an empty
+   vector if s has length 0."
   (if (= s "")
     []
     (str/split (str/triml s) #"\s+")))
@@ -205,13 +213,13 @@
       (re-groups+ m s))))
 
 
-(defn- drop-trailing-empty-strings [result]
-  (loop [max (count result)]
+(defn- drop-trailing-empty-strings [v]
+  (loop [max (count v)]
     (if (zero? max)
       []
-      (if (= "" (result (dec max)))
+      (if (= "" (v (dec max)))
         (recur (dec max))
-        (subvec result 0 max)))))
+        (subvec v 0 max)))))
 
 
 (defn- split-with-capture-core [s re limit]
@@ -272,10 +280,14 @@
      (instance? Character c) (let [n (count s)]
                                (if (zero? n)
                                  s
-                                 (if (= c (.charAt s (dec n)))
+                                 ;; Casts to int are not necessary for
+                                 ;; correct behavior, but they do help
+                                 ;; avoid a reflection warning for
+                                 ;; equiv (i.e. =).
+                                 (if (= (int c) (int (.charAt s (dec n))))
                                    (subs s 0 (dec n))
                                    s)))
-     (instance? CharSequence c) (let [c (.toString c)]
+     (instance? CharSequence c) (let [c (.toString ^CharSequence c)]
                                   (if (.endsWith s c)
                                     (subs s 0 (- (count s) (count c)))
                                     s))
@@ -327,6 +339,12 @@
 ;; TBD: Can I call this fn with sep=nil, or will ^CharSequence type
 ;; hint cause an error in that case?
 
+;; TBD: Check over use of 16-bit chars to see if this is safe for
+;; Unicode supplementary characters.  How does java.io.BufferedReader
+;; method read work for supplementary characters?  Does it return
+;; first a leading surrogate on one call, then a trailing surrogate on
+;; the next?
+
 (defn read-record
   "Like read-line, except it reads a 'record' from the stream that is
   the current value of *in*, where a record ends with the string sep.
@@ -371,8 +389,11 @@
                             j (int (dec (.length sb)))]
                        (if (neg? i)
                          true
-                         (if (= (.charAt sep-butlast i)
-                                (.charAt sb j))
+                         ;; Casts to int are not necessary for correct
+                         ;; behavior, but they do help avoid a
+                         ;; reflection warning for equiv (i.e. =).
+                         (if (= (int (.charAt sep-butlast i))
+                                (int (.charAt sb j)))
                            (recur (dec i) (dec j))
                            false))))
               (if *auto-chomp*
