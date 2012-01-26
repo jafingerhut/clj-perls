@@ -191,6 +191,7 @@
    (substr-replace s 17 \"tweeted\")  ; \"My loud parakeet tweeted\"
    (substr-replace s -4 \"issa\")     ; \"My loud parakeet is named Clarissa\"
    (substr-replace s -7 2 \"o\")      ; \"My loud parakeet is named Corence\"
+   (substr-replace s -7 -2 \"andi\")  ; \"My loud parakeet is named Candice\"
 
    Note that offset and length are in units of UTF-16 code units,
    i.e. Java chars, not in units of Unicode code points.  If you
