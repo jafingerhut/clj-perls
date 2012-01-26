@@ -22,31 +22,6 @@
        (System/exit (if (zero? shifted-status) 255 shifted-status)))))
 
 
-(defn ^String chr
-  "Return a string containing only the one specified Unicode code point,
-   although it may contain 1 or 2 UTF-16 code units.
-
-   Warning: Will return an invalid UTF-16 string containing only a
-   leading or trailing surrogate if you give it a codepoint in the
-   surrogate range, 0xD800 through 0xDFFF."
-  [codepoint]
-  (String. (Character/toChars codepoint)))
-
-
-(defn ord
-  "Return the Unicode code point of the first character in string s.
-   If the first character is a UTF-16 surrogate pair, the code point
-   returned is that of the pair, not of the leading surrogate.  Return
-   0 if the string is empty.
-
-   The behavior is undefined if the string is not valid UTF-16."
-  [^CharSequence s]
-  (let [s (.toString s)]
-    (if (= s "")   ; special case for Perl compatability
-      0
-      (.codePointAt s 0))))
-
-
 (defmacro while-<>
   "Approximately like Perl's:
 
@@ -373,7 +348,7 @@
                                   (if (.endsWith s c)
                                     (subs s 0 (- (count s) (count c)))
                                     s))
-     (instance? Number c) (chomp s (chr c))
+     (instance? Number c) (chomp s (uc/chr c))
      :else (throw (IllegalArgumentException. (str "Invalid c arg: " c))))))
 
 

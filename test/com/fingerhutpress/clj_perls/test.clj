@@ -1,4 +1,5 @@
 (ns com.fingerhutpress.clj-perls.test
+  (:require [com.fingerhutpress.text.unicode :as uc])
   (:use [com.fingerhutpress.clj-perls])
   (:use [clojure.test]))
 
@@ -9,29 +10,6 @@
 ;; files containing Clojure source code invoking die, making them
 ;; executable, and using clojure.java.shell/sh to run them and get
 ;; their exit status and *err* output.
-
-
-(deftest test-chr
-  (is (= "A" (chr 65)))
-  (is (= '( "\n" "\r" "\t" ) (map chr [10 13 9])))
-  (is (= "The quick brown fox jumped over the lazy dog"
-         (apply str (map chr [84 104 101 32 113 117 105 99 107 32 98
-                              114 111 119 110 32 102 111 120 32 106
-                              117 109 112 101 100 32 111 118 101 114
-                              32 116 104 101 32 108 97 122 121 32 100
-                              111 103]))))
-  (is (= "\ud834\udd1e" (chr 0x1d11e)))
-  (is (= "\ud83d\ude03 smiling face"
-         (apply str (map chr [0x1f603 32 115 109 105 108 105 110 103 32 102
-                              97 99 101]))))
-  (is (thrown? IllegalArgumentException (chr -1)))
-  (is (thrown? IllegalArgumentException (chr (inc Character/MAX_CODE_POINT))))
-  (is (thrown? IllegalArgumentException (chr (Integer/MAX_VALUE))))
-  (is (thrown? IllegalArgumentException (chr (Integer/MIN_VALUE)))))
-
-
-;; See com.fingerhutpress.unicode unit tests for more testing of chr
-;; and ord functions.
 
 
 ;; TBD: Test while-<> here?  Should be possible with input from files,
@@ -121,7 +99,7 @@
 ;; TBD: test split
 
 
-(def SMILING_FACE_WITH_OPEN_MOUTH_STR (chr 0x1F603))
+(def SMILING_FACE_WITH_OPEN_MOUTH_STR (uc/chr 0x1F603))
 
 (deftest test-chomp
   (is (= "" (chomp "" \a)))
