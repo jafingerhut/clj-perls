@@ -41,11 +41,51 @@
 ;; TBD: tests for splice
 
 
-;; TBD: tests for substr.  I have already written some that do quite
-;; exhaustive comparison to Perl's substr.  Perhaps better to do a
-;; handful of simple unit tests here, and leave the exhaustive testing
-;; to a separate shell script that invokes a Perl and Clojure program.
+;; TBD: I have already written some that do quite exhaustive
+;; comparison to Perl's substr.  Perhaps do more exhaustive testing to
+;; a separate shell script that invokes a Perl and Clojure program?
 ;; Or maybe invoke them from here with clojure.java.shell/sh?
+
+(deftest test-substr
+   (let [s "My loud parakeet is named Clarence"]
+     (is (= (substr s 3 4)  "loud"))
+     (is (= (substr s 3 -9) "loud parakeet is named"))
+     (is (= (substr s 17)   "is named Clarence"))
+     (is (= (substr s -4)   "ence"))
+     (is (= (substr s -7 2) "la"))
+     (is (= (substr s -7 -2) "laren"))
+     (binding [*exception-on-surrogate-pair-splitting* true]
+       (is (thrown? StringIndexOutOfBoundsException
+                    (substr "\ud834\udd1e" 0 1)))
+       (is (thrown? StringIndexOutOfBoundsException
+                    (substr "\ud834\udd1e" -1))))
+     (binding [*exception-on-surrogate-pair-splitting* false]
+       (is (= (substr "\ud834\udd1e" 0 1) "\ud834"))
+       (is (= (substr "\ud834\udd1e" -1) "\udd1e")))))
+
+
+(deftest test-substr-replace
+   (let [s "My loud parakeet is named Clarence"]
+     (is (= (substr-replace s 3 4 "quiet")
+            "My quiet parakeet is named Clarence"))
+     (is (= (substr-replace s 3 -9 "cat")
+            "My cat Clarence"))
+     (is (= (substr-replace s 17 "tweeted")
+            "My loud parakeet tweeted"))
+     (is (= (substr-replace s -4 "issa")
+            "My loud parakeet is named Clarissa"))
+     (is (= (substr-replace s -7 2 "o")
+            "My loud parakeet is named Corence"))
+     (is (= (substr-replace s -7 -2 "andi")
+            "My loud parakeet is named Candice"))
+     (binding [*exception-on-surrogate-pair-splitting* true]
+       (is (thrown? StringIndexOutOfBoundsException
+                    (substr-replace "\ud834\udd1e" 0 1 "foo")))
+       (is (thrown? StringIndexOutOfBoundsException
+                    (substr-replace "\ud834\udd1e" -1 "foo"))))
+     (binding [*exception-on-surrogate-pair-splitting* false]
+       (is (= (substr-replace "\ud834\udd1e" 0 1 "foo") "foo\udd1e"))
+       (is (= (substr-replace "\ud834\udd1e" -1 "foo") "\ud834foo")))))
 
 
 (deftest test-split-on-space

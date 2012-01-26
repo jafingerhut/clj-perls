@@ -1,8 +1,10 @@
 (ns com.fingerhutpress.clj-perls
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [com.fingerhutpress.text.unicode :as uc]))
 
 (set! *warn-on-reflection* true)
 
+(def ^{:dynamic true} *exception-on-surrogate-pair-splitting* true)
 
 (defn die
   "Print string msg to *err*, then exit.
@@ -130,12 +132,91 @@
 ;; Unicode code points, this isn't it.
 
 (defn substr
+  "Like Perl's substr(s,offset) and substr(s,offset,length).
+
+   Extracts a substring of s and returns it.  The first character is
+   at offset 0.  If offset is negative, starts that many characters
+   from the end of the string.  If length is omitted, returns
+   everything to the end of the string.  If length is negative, leaves
+   that many characters off the end of the string.
+
+   Examples:
+
+   (def s \"My loud parakeet is named Clarence\")
+   (substr s 3 4)    ; \"loud\"
+   (substr s 3 -9)   ; \"loud parakeet is named\"
+   (substr s 17)     ; \"is named Clarence\"
+   (substr s -4)     ; \"ence\"
+   (substr s -7 2)   ; \"la\"
+   (substr s -7 -2)  ; \"laren\"
+
+   Note that offset and length are in units of UTF-16 code units,
+   i.e. Java chars, not in units of Unicode code points.  If you
+   specify extracting a substring that takes one char of a surrogate
+   pair but not the other, that is probably a bug on your part.
+   substr will throw an exception in this case if
+   *exception-on-surrogate-pair-splitting* is true.
+
+   See also: substr-replace if you want the ability to replace a
+   substring, or cp-substr if you want offset and length in units of
+   Unicode code points, not Java chars."
   ([s offset]
      (when-let [[start end] (ps-start-end (count s) offset)]
-       (subs s start end)))
+       (let [x (subs s start end)]
+         (when (and *exception-on-surrogate-pair-splitting*
+                    (uc/bad-surrogate-at-either-end? x))
+           (throw (StringIndexOutOfBoundsException.)))
+         x)))
   ([s offset length]
      (when-let [[start end] (ps-start-end (count s) offset length)]
-       (subs s start end))))
+       (let [x (subs s start end)]
+         (when (and *exception-on-surrogate-pair-splitting*
+                    (uc/bad-surrogate-at-either-end? x))
+           (throw (StringIndexOutOfBoundsException.)))
+         x))))
+
+
+(defn substr-replace
+  "Like Perl's \"substr(s,offset) = replacement\" or
+   \"substr(s,offset,length) = replacement\", except that instead
+   of modifying the (immutable) string s, it returns a string that
+   is the same as s except with the specified substring replaced with
+   the string replacement.
+
+   Examples:
+
+   (def s \"My loud parakeet is named Clarence\")
+   (substr-replace s 3 4 \"quiet\")   ; \"My quiet parakeet is named Clarence\"
+   (substr-replace s 3 -9 \"cat\")    ; \"My cat Clarence\"
+   (substr-replace s 17 \"tweeted\")  ; \"My loud parakeet tweeted\"
+   (substr-replace s -4 \"issa\")     ; \"My loud parakeet is named Clarissa\"
+   (substr-replace s -7 2 \"o\")      ; \"My loud parakeet is named Corence\"
+
+   Note that offset and length are in units of UTF-16 code units,
+   i.e. Java chars, not in units of Unicode code points.  If you
+   specify extracting a substring that takes one char of a surrogate
+   pair but not the other, that is probably a bug on your part.
+   substr will throw an exception in this case if
+   *exception-on-surrogate-pair-splitting* is true.
+
+   See also: cp-substr-replace if you want offset and length in units
+   of Unicode code points, not Java chars."
+  ([s offset replacement]
+     (when-let [[start end] (ps-start-end (count s) offset)]
+       (let [x (subs s 0 start)]
+         (when (and *exception-on-surrogate-pair-splitting*
+                    (uc/bad-surrogate-at-either-end? x))
+           (throw (StringIndexOutOfBoundsException.)))
+         (str x replacement))))
+  ([s offset length replacement]
+     (when-let [[start end] (ps-start-end (count s) offset length)]
+       (let [x (subs s 0 start)
+             y (subs s end)]
+         (when (and *exception-on-surrogate-pair-splitting*
+                    (or (uc/bad-surrogate-at-either-end? x)
+                        (uc/bad-surrogate-at-either-end? y)))
+           (throw (StringIndexOutOfBoundsException.)))
+         (str x replacement y)))))
 
 
 (defn split-on-space [s]
