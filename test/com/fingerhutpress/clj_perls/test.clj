@@ -19,10 +19,11 @@
 ;; TBD: tests for splice
 
 
-;; TBD: I have already written some that do quite exhaustive
-;; comparison to Perl's substr.  Perhaps do more exhaustive testing to
-;; a separate shell script that invokes a Perl and Clojure program?
-;; Or maybe invoke them from here with clojure.java.shell/sh?
+;; TBD: I have written some tests for Clojure substr that do quite
+;; exhaustive comparison to Perl's substr.  Perhaps do more exhaustive
+;; testing in a separate shell script that invokes a Perl and Clojure
+;; program?  Or maybe invoke them from here with
+;; clojure.java.shell/sh?
 
 (deftest test-substr
    (let [s "My loud parakeet is named Clarence"]
